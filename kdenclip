@@ -20,7 +20,7 @@ def main():
 	parser.add_argument('-o', '--outfile', action="store", default='.', help='Directory to save extracted clips')
 
 	args = parser.parse_args()
-	print(args)
+#	print(args)
 
 	# TODO: handle errors
 #	os.path.exists(infile)
@@ -34,6 +34,8 @@ def main():
 	
 	
 def ExtractClips( inFileName, outPath ):
+
+	print("\nParsing kdenlive project %s ..." % inFileName)
 
 	# Soupify XML
 	soup = BeautifulSoup(open(inFileName))
@@ -70,7 +72,7 @@ def ExtractClips( inFileName, outPath ):
 			
 			outFileName="%d-%d-%s" % (int(startSeconds), int(endSeconds), name)
 			outFileNamePath=os.path.join(outPath,outFileName)
-			ffmpegCommandLine=['ffmpeg','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileNamePath] 
+			ffmpegCommandLine=['ffmpeg','-y','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileNamePath] 
 
 			clips.append({'id':producerID, 'name':name, 'resource':resource, 'startFrame':startFrame, 'endFrame':endFrame, 'durationFrames':durationFrames, 'startSeconds':startSeconds, 'endSeconds':endSeconds, 'durationSeconds':durationSeconds, 'ffmpegCommandLine':ffmpegCommandLine })
 
@@ -85,11 +87,10 @@ def ExtractClips( inFileName, outPath ):
 			errorCount += 1;
 
 	# Report on completion
-	print("\n**************************************************")
+	print("\n---")
 	print("Finished extracting clips from %s" % inFileName)
 	print("  %d clip operations performed" % len(clips))
 	print("  %d errors occured" % errorCount)
-	print("**************************************************")
 
 
 if __name__ == "__main__":
