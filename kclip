@@ -52,23 +52,19 @@ for producer in soup.find_all('kdenlive_producer'):
 
 
 # Execute ffmpeg commmands
+errorCount = 0
 for clip in clips:
 #	print(clip['ffmpegCommandLine'])
 	proc=subprocess.Popen(clip['ffmpegCommandLine'])
 	proc.wait()
+	if( proc.returncode != 0 ):
+		errorCount += 1;
 
+# Report on completion
 print("\n**************************************************")
-print("Finished")
+print("Finished extracting clips from %s" % inFile)
+print("  %d clip operations performed" % len(clips))
+print("  %d errors occured" % errorCount)
 print("**************************************************")
 
 
-'''	
-# Find clip 
-for clip in soup.find_all("./playlist/*[@producer='1']"):
-	producer=clip.get('producer')
-	start=clip.get('in')
-	out=clip.get('out')
-	length=int(out)-int(start)
-	
-	print(producer, start, out, length)
-'''
