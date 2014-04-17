@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Generate video clips from a kdenlive project file.
+# Extract video clips from a kdenlive project file.
 #
 #	kdenclip project.kdenlive
 #	kdenclip project.kdenlive output/path/
@@ -9,10 +9,28 @@
 from bs4 import BeautifulSoup
 import re
 import subprocess
+import os
 
 
 def main():
-	ExtractClips( '/home/david/tsnap/kden/test.kdenlive', './out' )
+	import argparse
+
+	parser = argparse.ArgumentParser(description='Extract video clips from a kdenlive project file.')
+	parser.add_argument('infile', action="store", help='Kdenlive project file to extract clips from')
+	parser.add_argument('-o', '--outfile', action="store", default='.', help='Directory to save extracted clips')
+
+	args = parser.parse_args()
+	print(args)
+
+	# TODO: handle errors
+#	os.path.exists(infile)
+#	os.path.exists(outfile)
+
+	ExtractClips( args.infile, args.outfile )
+
+	return
+	
+	
 	
 	
 def ExtractClips( inFileName, outPath ):
@@ -51,7 +69,8 @@ def ExtractClips( inFileName, outPath ):
 			durationSeconds=endSeconds-startSeconds
 			
 			outFileName="%d-%d-%s" % (int(startSeconds), int(endSeconds), name)
-			ffmpegCommandLine=['ffmpeg','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileName] 
+			outFileNamePath=os.path.join(outPath,outFileName)
+			ffmpegCommandLine=['ffmpeg','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileNamePath] 
 
 			clips.append({'id':producerID, 'name':name, 'resource':resource, 'startFrame':startFrame, 'endFrame':endFrame, 'durationFrames':durationFrames, 'startSeconds':startSeconds, 'endSeconds':endSeconds, 'durationSeconds':durationSeconds, 'ffmpegCommandLine':ffmpegCommandLine })
 
