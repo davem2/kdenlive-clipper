@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+#
+# Generate video clips from a kdenlive project file.
+#
+
+import xml.etree.ElementTree as ET
+
+
+# TODO: make infile and outpath command line argument
+inFile = '/home/david/tsnap/kden/test.kdenlive'
+outPath = '.'
+
+# Parse XML
+tree = ET.parse(inFile)
+root = tree.getroot()
+
+frameRate = float(root.find('profile').get('frame_rate_num'))
+print(frameRate)
+# TODO: check that frameRate was parsed properly
+
+# Build list of clips contained in project
+clips = [];
+for producer in root.findall('./kdenlivedoc/kdenlive_producer'):
+	producerID=producer.get('id')	
+	name=producer.get('name')
+	resource=producer.get('resource')
+
+	xpath="./playlist/*[@producer='%s']" % (producerID)
+	for clip in root.findall(xpath):
+		startFrame=int(clip.get('in'))
+		endFrame=int(clip.get('out'))
+		startSeconds=startFrame/frameRate
+		endSeconds=endFrame/frameRate
+		durationFrames=endFrame-startFrame
+		durationSeconds=endSeconds-startSeconds
+		
+		outFileName="%d-%d-%s" % (int(startSeconds), int(endSeconds), name)
+		ffmpegCommandLine="ffmpeg -i %s -ss %0.3f -t %0.3f -c copy %s" % (resource, startSeconds, durationSeconds, outFileName)
+
+		clips.append({'id':producerID, 'name':name, 'resource':resource, 'startFrame':startFrame, 'endFrame':endFrame, 'durationFrames':durationFrames, 'startSeconds':startSeconds, 'endSeconds':endSeconds, 'durationSeconds':durationSeconds, 'ffmpegCommandLine':ffmpegCommandLine })
+
+
+# Execute ffmpeg commmands
+for clip in clips:
+	print(clip['ffmpegCommandLine'])
+#	subprocess.Popen(clip['ffmpegCommandLine'],shell=True)
+
+'''	
+# Find clip 
+for clip in root.findall("./playlist/*[@producer='1']"):
+	producer=clip.get('producer')
+	start=clip.get('in')
+	out=clip.get('out')
+	length=int(out)-int(start)
+	
+	print(producer, start, out, length)
+'''
