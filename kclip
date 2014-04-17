@@ -32,10 +32,11 @@ for producer in soup.find_all('kdenlive_producer'):
 	
 #	print(producerID, name, resource)
 
-	regex = "^%s_" % producerID
+	# kdenlive identifies producers as <clipid>_<track> or just <clipid> when on first track
+	regex = "^%s_|^%s$" % (producerID,producerID)
 	for clip in soup.find_all('entry',producer=re.compile(regex)):
 
-		print(clip)
+#		print(clip)
 		
 		startFrame=int(clip['in'])
 		endFrame=int(clip['out'])
@@ -45,7 +46,7 @@ for producer in soup.find_all('kdenlive_producer'):
 		durationSeconds=endSeconds-startSeconds
 		
 		outFileName="%d-%d-%s" % (int(startSeconds), int(endSeconds), name)
-		ffmpegCommandLine="ffmpeg -i %s -ss %0.3f -t %0.3f -c copy %s" % (resource, startSeconds, durationSeconds, outFileName)
+		ffmpegCommandLine=['ffmpeg','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileName] 
 
 		clips.append({'id':producerID, 'name':name, 'resource':resource, 'startFrame':startFrame, 'endFrame':endFrame, 'durationFrames':durationFrames, 'startSeconds':startSeconds, 'endSeconds':endSeconds, 'durationSeconds':durationSeconds, 'ffmpegCommandLine':ffmpegCommandLine })
 
@@ -53,9 +54,9 @@ for producer in soup.find_all('kdenlive_producer'):
 # Execute ffmpeg commmands
 for clip in clips:
 #	print(clip['ffmpegCommandLine'])
-	subprocess.Popen(clip['ffmpegCommandLine'],shell=True)
+	subprocess.Popen(clip['ffmpegCommandLine'])
 
-
+print("Finished")
 
 
 '''	
