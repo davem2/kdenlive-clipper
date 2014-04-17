@@ -2,69 +2,76 @@
 #
 # Generate video clips from a kdenlive project file.
 #
+#	kdenclip project.kdenlive
+#	kdenclip project.kdenlive output/path/
+#
 
 from bs4 import BeautifulSoup
 import re
 import subprocess
 
 
-# TODO: make infile and outpath command line argument
-inFile = '/home/david/tsnap/kden/test.kdenlive'
-outPath = '.'
-
-# Soupify XML
-soup = BeautifulSoup(open(inFile))
-
-# Parse framerate
-frameRate = float(soup.profile['frame_rate_num'])
-print(frameRate)
-# TODO: check that frameRate was parsed properly
-
-# Parse clip data from kdenlive project file
-clips = [];
-#producers = soup.find_all'kdenlive_producer')
-for producer in soup.find_all('kdenlive_producer'):
-#	print(producer)
-
-	producerID=producer['id']	
-	name=producer['name']
-	resource=producer['resource']
+def main():
+	ExtractClips( '/home/david/tsnap/kden/test.kdenlive', './out' )
 	
-#	print(producerID, name, resource)
+	
+def ExtractClips( inFileName, outPath ):
 
-	# kdenlive identifies producers as <clipid>_<track> or just <clipid> when on first track
-	regex = "^%s_|^%s$" % (producerID,producerID)
-	for clip in soup.find_all('entry',producer=re.compile(regex)):
+	# Soupify XML
+	soup = BeautifulSoup(open(inFileName))
 
-#		print(clip)
+	# Parse framerate
+	frameRate = float(soup.profile['frame_rate_num'])
+#	print(frameRate)
+	# TODO: check that frameRate was parsed properly
+
+	# Parse clip data from kdenlive project file
+	clips = [];
+	#producers = soup.find_all'kdenlive_producer')
+	for producer in soup.find_all('kdenlive_producer'):
+	#	print(producer)
+
+		producerID=producer['id']	
+		name=producer['name']
+		resource=producer['resource']
 		
-		startFrame=int(clip['in'])
-		endFrame=int(clip['out'])
-		startSeconds=startFrame/frameRate
-		endSeconds=endFrame/frameRate
-		durationFrames=endFrame-startFrame
-		durationSeconds=endSeconds-startSeconds
-		
-		outFileName="%d-%d-%s" % (int(startSeconds), int(endSeconds), name)
-		ffmpegCommandLine=['ffmpeg','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileName] 
+	#	print(producerID, name, resource)
 
-		clips.append({'id':producerID, 'name':name, 'resource':resource, 'startFrame':startFrame, 'endFrame':endFrame, 'durationFrames':durationFrames, 'startSeconds':startSeconds, 'endSeconds':endSeconds, 'durationSeconds':durationSeconds, 'ffmpegCommandLine':ffmpegCommandLine })
+		# kdenlive identifies producers as <clipid>_<track> or just <clipid> when on first track
+		regex = "^%s_|^%s$" % (producerID,producerID)
+		for clip in soup.find_all('entry',producer=re.compile(regex)):
 
+	#		print(clip)
+			
+			startFrame=int(clip['in'])
+			endFrame=int(clip['out'])
+			startSeconds=startFrame/frameRate
+			endSeconds=endFrame/frameRate
+			durationFrames=endFrame-startFrame
+			durationSeconds=endSeconds-startSeconds
+			
+			outFileName="%d-%d-%s" % (int(startSeconds), int(endSeconds), name)
+			ffmpegCommandLine=['ffmpeg','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileName] 
 
-# Execute ffmpeg commmands
-errorCount = 0
-for clip in clips:
-#	print(clip['ffmpegCommandLine'])
-	proc=subprocess.Popen(clip['ffmpegCommandLine'])
-	proc.wait()
-	if( proc.returncode != 0 ):
-		errorCount += 1;
-
-# Report on completion
-print("\n**************************************************")
-print("Finished extracting clips from %s" % inFile)
-print("  %d clip operations performed" % len(clips))
-print("  %d errors occured" % errorCount)
-print("**************************************************")
+			clips.append({'id':producerID, 'name':name, 'resource':resource, 'startFrame':startFrame, 'endFrame':endFrame, 'durationFrames':durationFrames, 'startSeconds':startSeconds, 'endSeconds':endSeconds, 'durationSeconds':durationSeconds, 'ffmpegCommandLine':ffmpegCommandLine })
 
 
+	# Execute ffmpeg commmands
+	errorCount = 0
+	for clip in clips:
+	#	print(clip['ffmpegCommandLine'])
+		proc=subprocess.Popen(clip['ffmpegCommandLine'])
+		proc.wait()
+		if( proc.returncode != 0 ):
+			errorCount += 1;
+
+	# Report on completion
+	print("\n**************************************************")
+	print("Finished extracting clips from %s" % inFileName)
+	print("  %d clip operations performed" % len(clips))
+	print("  %d errors occured" % errorCount)
+	print("**************************************************")
+
+
+if __name__ == "__main__":
+    main()
