@@ -3,32 +3,42 @@
 # Generate video clips from a kdenlive project file.
 #
 
-import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
+import re
+import subprocess
 
 
 # TODO: make infile and outpath command line argument
 inFile = '/home/david/tsnap/kden/test.kdenlive'
 outPath = '.'
 
-# Parse XML
-tree = ET.parse(inFile)
-root = tree.getroot()
+# Soupify XML
+soup = BeautifulSoup(open(inFile))
 
-frameRate = float(root.find('profile').get('frame_rate_num'))
+# Parse framerate
+frameRate = float(soup.profile['frame_rate_num'])
 print(frameRate)
 # TODO: check that frameRate was parsed properly
 
-# Build list of clips contained in project
+# Parse clip data from kdenlive project file
 clips = [];
-for producer in root.findall('./kdenlivedoc/kdenlive_producer'):
-	producerID=producer.get('id')	
-	name=producer.get('name')
-	resource=producer.get('resource')
+#producers = soup.find_all'kdenlive_producer')
+for producer in soup.find_all('kdenlive_producer'):
+#	print(producer)
 
-	xpath="./playlist/*[@producer='%s']" % (producerID)
-	for clip in root.findall(xpath):
-		startFrame=int(clip.get('in'))
-		endFrame=int(clip.get('out'))
+	producerID=producer['id']	
+	name=producer['name']
+	resource=producer['resource']
+	
+#	print(producerID, name, resource)
+
+	regex = "^%s_" % producerID
+	for clip in soup.find_all('entry',producer=re.compile(regex)):
+
+		print(clip)
+		
+		startFrame=int(clip['in'])
+		endFrame=int(clip['out'])
 		startSeconds=startFrame/frameRate
 		endSeconds=endFrame/frameRate
 		durationFrames=endFrame-startFrame
@@ -42,12 +52,15 @@ for producer in root.findall('./kdenlivedoc/kdenlive_producer'):
 
 # Execute ffmpeg commmands
 for clip in clips:
-	print(clip['ffmpegCommandLine'])
-#	subprocess.Popen(clip['ffmpegCommandLine'],shell=True)
+#	print(clip['ffmpegCommandLine'])
+	subprocess.Popen(clip['ffmpegCommandLine'],shell=True)
+
+
+
 
 '''	
 # Find clip 
-for clip in root.findall("./playlist/*[@producer='1']"):
+for clip in soup.find_all("./playlist/*[@producer='1']"):
 	producer=clip.get('producer')
 	start=clip.get('in')
 	out=clip.get('out')
