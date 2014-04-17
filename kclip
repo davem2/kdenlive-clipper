@@ -54,9 +54,12 @@ for producer in soup.find_all('kdenlive_producer'):
 # Execute ffmpeg commmands
 for clip in clips:
 #	print(clip['ffmpegCommandLine'])
-	subprocess.Popen(clip['ffmpegCommandLine'])
+	proc=subprocess.Popen(clip['ffmpegCommandLine'])
+	proc.wait()
 
+print("\n**************************************************")
 print("Finished")
+print("**************************************************")
 
 
 '''	
