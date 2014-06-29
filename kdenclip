@@ -3,7 +3,7 @@
 # Extract video clips from a kdenlive project file.
 #
 #	kdenclip project.kdenlive
-#	kdenclip project.kdenlive output/path/
+#	kdenclip project.kdenlive -o output/path/
 #
 
 from bs4 import BeautifulSoup
