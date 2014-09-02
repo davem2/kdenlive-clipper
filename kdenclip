@@ -41,7 +41,9 @@ def ExtractClips( inFileName, outPath ):
 	soup = BeautifulSoup(open(inFileName))
 
 	# Parse framerate
-	frameRate = float(soup.profile['frame_rate_num'])
+	frameRateDen = float(soup.profile['frame_rate_den'])
+	frameRateNum = float(soup.profile['frame_rate_num'])
+	frameRate = float(frameRateNum/frameRateDen)
 #	print(frameRate)
 	# TODO: check that frameRate was parsed properly
 
@@ -49,19 +51,19 @@ def ExtractClips( inFileName, outPath ):
 	clips = [];
 	#producers = soup.find_all'kdenlive_producer')
 	for producer in soup.find_all('kdenlive_producer'):
-	#	print(producer)
+#		print(producer)
 
 		producerID=producer['id']	
 		name=producer['name']
 		resource=producer['resource']
 		
-	#	print(producerID, name, resource)
+#		print(producerID, name, resource)
 
 		# kdenlive identifies producers as <clipid>_<track> or just <clipid> when on first track
 		regex = "^%s_|^%s$" % (producerID,producerID)
 		for clip in soup.find_all('entry',producer=re.compile(regex)):
 
-	#		print(clip)
+#			print(clip)
 			
 			startFrame=int(clip['in'])
 			endFrame=int(clip['out'])
@@ -80,7 +82,7 @@ def ExtractClips( inFileName, outPath ):
 	# Execute ffmpeg commmands
 	errorCount = 0
 	for clip in clips:
-	#	print(clip['ffmpegCommandLine'])
+#		print(clip['ffmpegCommandLine'])
 		proc=subprocess.Popen(clip['ffmpegCommandLine'])
 		proc.wait()
 		if( proc.returncode != 0 ):
