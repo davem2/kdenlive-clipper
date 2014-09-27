@@ -72,7 +72,17 @@ def ExtractClips( inFileName, outPath ):
 			durationFrames=endFrame-startFrame
 			durationSeconds=endSeconds-startSeconds
 			
-			outFileName="%d-%d-%s" % (int(startSeconds), int(endSeconds), name)
+			# break file into name and extension
+			m = re.search(r"(.+)\.(.+)$",name)
+			if( m ):
+				fileName = m.group(1)
+				fileExtension = ".{}".format(m.group(2))
+			else:
+				print("ERROR: could not parse file extension")
+				fileName = outFileName
+				fileExtension = ""
+				
+			outFileName="%s-%d-%d%s" % (fileName, int(startSeconds), int(endSeconds), fileExtension)
 			outFileNamePath=os.path.join(outPath,outFileName)
 			ffmpegCommandLine=['ffmpeg','-y','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileNamePath] 
 
