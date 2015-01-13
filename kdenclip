@@ -29,9 +29,12 @@ def main():
 	args = parser.parse_args()
 	logger.debug(str(args))
 	
-	# TODO: handle errors
-#	os.path.exists(infile)
-#	os.path.exists(outfile)
+	if not os.path.exists(infile):
+		logger.error("infile argument '%s' isn't a file" % (infile, ))
+		return
+	if not os.path.isdir(outfile):
+		logger.error("outfile argument '%s' isn't a directory" % (outfile, ))
+		return
 
 	inFileName = args.infile
 	extractClips = ExtractClips( inFileName, args.outfile )
