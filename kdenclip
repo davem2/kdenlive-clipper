@@ -51,9 +51,11 @@ def main():
 class ExtractClips():
 	"""Instances parse the kdenlive project file denoted by inFileName and 
 	extract the clips of the project with `ffmpeg` into the directory denoted 
-	by outPath"""
+	by outPath."""
 	
 	def __init__(self, inFileName, outPath):
+		"""Creates an instance of ExtractClips which can be used mainly with 
+		its parse function. It expects inFileName and outPath to exist."""
 		self.clips = []
 		self.errorCount = 0
 		self.inFileName = inFileName
