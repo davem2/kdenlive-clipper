@@ -10,6 +10,13 @@ from bs4 import BeautifulSoup
 import re
 import subprocess
 import os
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+logger.addHandler(ch)
 
 
 def main():
@@ -20,7 +27,7 @@ def main():
 	parser.add_argument('-o', '--outfile', action="store", default='.', help='Directory to save extracted clips')
 
 	args = parser.parse_args()
-#	print(args)
+	logger.debug(str(args))
 
 	# TODO: handle errors
 #	os.path.exists(infile)
@@ -44,26 +51,25 @@ def ExtractClips( inFileName, outPath ):
 	frameRateDen = float(soup.profile['frame_rate_den'])
 	frameRateNum = float(soup.profile['frame_rate_num'])
 	frameRate = float(frameRateNum/frameRateDen)
-#	print(frameRate)
+	logger.debug("frameRate:\t%d" % (frameRate, ))
 	# TODO: check that frameRate was parsed properly
 
 	# Parse clip data from kdenlive project file
 	clips = [];
 	#producers = soup.find_all'kdenlive_producer')
 	for producer in soup.find_all('kdenlive_producer'):
-#		print(producer)
+	    logger.debug("producer:\ts%" % (producer, ))
 
 		producerID=producer['id']	
 		name=producer['name']
 		resource=producer['resource']
 		
-#		print(producerID, name, resource)
+		logger.debug("producerID: %s;\tname: %s;\tresource: %s" % (producerID, name, resource))
 
 		# kdenlive identifies producers as <clipid>_<track> or just <clipid> when on first track
 		regex = "^%s_|^%s$" % (producerID,producerID)
 		for clip in soup.find_all('entry',producer=re.compile(regex)):
-
-#			print(clip)
+            logger.debug("clip: %s" % (clip, ))
 			
 			startFrame=int(clip['in'])
 			endFrame=int(clip['out'])
@@ -78,7 +84,7 @@ def ExtractClips( inFileName, outPath ):
 				fileName = m.group(1)
 				fileExtension = ".{}".format(m.group(2))
 			else:
-				print("ERROR: could not parse file extension")
+				logger.error("could not parse file extension of '%s'" % (name, ))
 				fileName = outFileName
 				fileExtension = ""
 				
@@ -92,8 +98,9 @@ def ExtractClips( inFileName, outPath ):
 	# Execute ffmpeg commmands
 	errorCount = 0
 	for clip in clips:
-#		print(clip['ffmpegCommandLine'])
-		proc=subprocess.Popen(clip['ffmpegCommandLine'])
+	    ffmpegCommandLine = clip['ffmpegCommandLine']
+	    logger.debug("ffmpegCommandLine: %s" % (str(ffmpegCommandLine), ))
+		proc=subprocess.Popen(ffmpegCommandLine)
 		proc.wait()
 		if( proc.returncode != 0 ):
 			errorCount += 1;
