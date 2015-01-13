@@ -79,7 +79,7 @@ class ExtractClips():
 		# Parse clip data from kdenlive project file
 		#producers = soup.find_all'kdenlive_producer')
 		for producer in soup.find_all('kdenlive_producer'):
-			logger.debug("producer:\ts%" % (producer, ))
+			logger.debug("producer:\t%s" % (producer, ))
 		
 			producerID=producer['id']	
 			name=producer['name']
