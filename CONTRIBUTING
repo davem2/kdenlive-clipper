@@ -1,0 +1,5 @@
+
+## Documentation
+Documentation is currently done with python docstring according to [PEP 257][1].
+
+[1]: https://www.python.org/dev/peps/pep-0257/
