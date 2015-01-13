@@ -55,7 +55,7 @@ def ExtractClips( inFileName, outPath ):
 	# TODO: check that frameRate was parsed properly
 
 	# Parse clip data from kdenlive project file
-	clips = [];
+	clips = []
 	#producers = soup.find_all'kdenlive_producer')
 	for producer in soup.find_all('kdenlive_producer'):
 		logger.debug("producer:\ts%" % (producer, ))
