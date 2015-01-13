@@ -28,7 +28,7 @@ def main():
 
 	args = parser.parse_args()
 	logger.debug(str(args))
-
+	
 	# TODO: handle errors
 #	os.path.exists(infile)
 #	os.path.exists(outfile)
@@ -58,8 +58,8 @@ def ExtractClips( inFileName, outPath ):
 	clips = [];
 	#producers = soup.find_all'kdenlive_producer')
 	for producer in soup.find_all('kdenlive_producer'):
-	    logger.debug("producer:\ts%" % (producer, ))
-
+		logger.debug("producer:\ts%" % (producer, ))
+		
 		producerID=producer['id']	
 		name=producer['name']
 		resource=producer['resource']
@@ -69,7 +69,7 @@ def ExtractClips( inFileName, outPath ):
 		# kdenlive identifies producers as <clipid>_<track> or just <clipid> when on first track
 		regex = "^%s_|^%s$" % (producerID,producerID)
 		for clip in soup.find_all('entry',producer=re.compile(regex)):
-            logger.debug("clip: %s" % (clip, ))
+			logger.debug("clip: %s" % (clip, ))
 			
 			startFrame=int(clip['in'])
 			endFrame=int(clip['out'])
@@ -98,8 +98,8 @@ def ExtractClips( inFileName, outPath ):
 	# Execute ffmpeg commmands
 	errorCount = 0
 	for clip in clips:
-	    ffmpegCommandLine = clip['ffmpegCommandLine']
-	    logger.debug("ffmpegCommandLine: %s" % (str(ffmpegCommandLine), ))
+		ffmpegCommandLine = clip['ffmpegCommandLine']
+		logger.debug("ffmpegCommandLine: %s" % (str(ffmpegCommandLine), ))
 		proc=subprocess.Popen(ffmpegCommandLine)
 		proc.wait()
 		if( proc.returncode != 0 ):
@@ -113,4 +113,4 @@ def ExtractClips( inFileName, outPath ):
 
 
 if __name__ == "__main__":
-    main()
+	main()
