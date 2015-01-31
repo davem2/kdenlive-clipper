@@ -29,22 +29,25 @@ def main():
 	args = parser.parse_args()
 	logger.debug(str(args))
 	
-	if not os.path.exists(infile):
-		logger.error("infile argument '%s' isn't a file" % (infile, ))
+	args.infile = os.path.expanduser(args.infile)
+	args.outfile = os.path.expanduser(args.outfile)
+	
+	if not os.path.exists(args.infile):
+		logger.error("infile argument '%s' isn't a file" % (args.infile, ))
 		return
-	if not os.path.isdir(outfile):
-		logger.error("outfile argument '%s' isn't a directory" % (outfile, ))
+	if not os.path.isdir(args.outfile):
+		logger.error("outfile argument '%s' isn't a directory" % (args.outfile, ))
 		return
 
 	inFileName = args.infile
-	extractClips = ExtractClips( inFileName, args.outfile )
-	print("\nParsing kdenlive project %s ..." % inFileName)
+	extractClips = ExtractClips( args.infile, args.outfile )
+	print("\nParsing kdenlive project %s ..." % args.infile)
 	extractClips.parse()
 	clips = extractClips.getClips()
 	errorCount = extractClips.getErrorCount()
 	# Report on completion
 	print("\n---")
-	print("Finished extracting clips from %s" % inFileName)
+	print("Finished extracting clips from %s" % args.infile)
 	print("  %d clip operations performed" % len(clips))
 	print("  %d errors occured" % errorCount)
 
