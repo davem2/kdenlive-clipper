@@ -33,23 +33,22 @@ def main():
 	args.outfile = os.path.expanduser(args.outfile)
 	
 	if not os.path.exists(args.infile):
-		logger.error("infile argument '%s' isn't a file" % (args.infile, ))
+		logger.error("infile argument '%s' isn't a file" % args.infile)
 		return
 	if not os.path.isdir(args.outfile):
-		logger.error("outfile argument '%s' isn't a directory" % (args.outfile, ))
+		logger.error("outfile argument '%s' isn't a directory" % args.outfile)
 		return
 
-	inFileName = args.infile
-	extractClips = ExtractClips( args.infile, args.outfile )
-	print("\nParsing kdenlive project %s ..." % args.infile)
+	extractClips = ExtractClips(args.infile, args.outfile)
+	logger.info("\nParsing kdenlive project %s ..." % args.infile)
 	extractClips.parse()
 	clips = extractClips.getClips()
 	errorCount = extractClips.getErrorCount()
 	# Report on completion
-	print("\n---")
-	print("Finished extracting clips from %s" % args.infile)
-	print("  %d clip operations performed" % len(clips))
-	print("  %d errors occured" % errorCount)
+	logger.info("\n---")
+	logger.info("Finished extracting clips from %s" % args.infile)
+	logger.info("  %d clip operations performed" % len(clips))
+	logger.info("  %d errors occured" % errorCount)
 
 	return
 	
@@ -79,13 +78,13 @@ class ExtractClips():
 		frameRateDen = float(soup.profile['frame_rate_den'])
 		frameRateNum = float(soup.profile['frame_rate_num'])
 		frameRate = float(frameRateNum/frameRateDen)
-		logger.debug("frameRate:\t%d" % (frameRate, ))
+		logger.debug("frameRate:\t%d" % frameRate)
 		# TODO: check that frameRate was parsed properly
 
 		# Parse clip data from kdenlive project file
 		#producers = soup.find_all'kdenlive_producer')
 		for producer in soup.find_all('kdenlive_producer'):
-			logger.debug("producer:\t%s" % (producer, ))
+			logger.debug("producer:\t%s" % producer)
 		
 			producerID=producer['id']	
 			name=producer['name']
@@ -96,7 +95,7 @@ class ExtractClips():
 			# kdenlive identifies producers as <clipid>_<track> or just <clipid> when on first track
 			regex = "^%s_|^%s$" % (producerID,producerID)
 			for clip in soup.find_all('entry',producer=re.compile(regex)):
-				logger.debug("clip: %s" % (clip, ))
+				logger.debug("clip: %s" % clip)
 			
 				startFrame=int(clip['in'])
 				endFrame=int(clip['out'])
@@ -111,7 +110,7 @@ class ExtractClips():
 					fileName = m.group(1)
 					fileExtension = ".{}".format(m.group(2))
 				else:
-					logger.error("could not parse file extension of '%s'" % (name, ))
+					logger.error("could not parse file extension of '%s'" % name)
 					fileName = outFileName
 					fileExtension = ""
 				
@@ -125,7 +124,7 @@ class ExtractClips():
 		# Execute ffmpeg commmands
 		for clip in self.clips:
 			ffmpegCommandLine = clip['ffmpegCommandLine']
-			logger.debug("ffmpegCommandLine: %s" % (str(ffmpegCommandLine), ))
+			logger.debug("ffmpegCommandLine: %s" % str(ffmpegCommandLine))
 			proc=subprocess.Popen(ffmpegCommandLine)
 			proc.wait()
 			if( proc.returncode != 0 ):
