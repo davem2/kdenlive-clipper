@@ -2,8 +2,8 @@
 #
 # Extract video clips from a kdenlive project file.
 #
-#	kdenclip project.kdenlive
-#	kdenclip project.kdenlive -o output/path/
+#   kdenclip project.kdenlive
+#   kdenclip project.kdenlive -o output/path/
 #
 
 from bs4 import BeautifulSoup
@@ -20,122 +20,134 @@ logger.addHandler(ch)
 
 
 def main():
-	import argparse
+    import argparse
 
-	parser = argparse.ArgumentParser(description='Extract video clips from a kdenlive project file.')
-	parser.add_argument('infile', action="store", help='Kdenlive project file to extract clips from')
-	parser.add_argument('-o', '--outfile', action="store", default='.', help='Directory to save extracted clips')
+    parser = argparse.ArgumentParser(description='Extract video clips from a kdenlive project file.')
+    parser.add_argument('infile', action="store", help='Kdenlive project file to extract clips from')
+    parser.add_argument('-o', '--outfile', action="store", default='.', help='Directory to save extracted clips')
 
-	args = parser.parse_args()
-	logger.debug(str(args))
-	
-	args.infile = os.path.expanduser(args.infile)
-	args.outfile = os.path.expanduser(args.outfile)
-	
-	if not os.path.exists(args.infile):
-		logger.error("infile argument '%s' isn't a file" % args.infile)
-		return
-	if not os.path.isdir(args.outfile):
-		logger.error("outfile argument '%s' isn't a directory" % args.outfile)
-		return
+    args = parser.parse_args()
+    logger.debug(str(args))
 
-	extractClips = ExtractClips(args.infile, args.outfile)
-	logger.info("\nParsing kdenlive project %s ..." % args.infile)
-	extractClips.parse()
-	clips = extractClips.getClips()
-	errorCount = extractClips.getErrorCount()
-	# Report on completion
-	logger.info("\n---")
-	logger.info("Finished extracting clips from %s" % args.infile)
-	logger.info("  %d clip operations performed" % len(clips))
-	logger.info("  %d errors occured" % errorCount)
+    args.infile = os.path.expanduser(args.infile)
+    args.outfile = os.path.expanduser(args.outfile)
 
-	return
-	
-	
+    if not os.path.exists(args.infile):
+        logger.error("infile argument '%s' isn't a file" % args.infile)
+        return
+    if not os.path.isdir(args.outfile):
+        logger.error("outfile argument '%s' isn't a directory" % args.outfile)
+        return
+
+    extractClips = ExtractClips(args.infile, args.outfile)
+    logger.info("\nParsing kdenlive project %s ..." % args.infile)
+    extractClips.parse()
+    clips = extractClips.getClips()
+    errorCount = extractClips.getErrorCount()
+    # Report on completion
+    logger.info("\n---")
+    logger.info("Finished extracting clips from %s" % args.infile)
+    logger.info("  %d clip operations performed" % len(clips))
+    logger.info("  %d errors occured" % errorCount)
+
+    return
+
+
 class ExtractClips():
-	"""Instances parse the kdenlive project file denoted by inFileName and 
-	extract the clips of the project with `ffmpeg` into the directory denoted 
-	by outPath."""
-	
-	def __init__(self, inFileName, outPath):
-		"""Creates an instance of ExtractClips which can be used mainly with 
-		its parse function. It expects inFileName and outPath to exist."""
-		self.clips = []
-		self.errorCount = 0
-		self.inFileName = inFileName
-		self.outPath = outPath
-	
-	def parse(self):
-		"""parses the file denoted by the class property inFilePath and writes 
-		result into the directory denoted by outPath. The results can be 
-		retrieved from the clips property. The number of errors encountered are 
-		stored into the errorCount property. Instances are not reusable."""
-		# Soupify XML
-		soup = BeautifulSoup(open(self.inFileName))
+    """Instances parse the kdenlive project file denoted by inFileName
+    and extract the clips of the project with `ffmpeg` into the
+    directory denoted by outPath."""
 
-		# Parse framerate
-		frameRateDen = float(soup.profile['frame_rate_den'])
-		frameRateNum = float(soup.profile['frame_rate_num'])
-		frameRate = float(frameRateNum/frameRateDen)
-		logger.debug("frameRate:\t%d" % frameRate)
-		# TODO: check that frameRate was parsed properly
+    def __init__(self, inFileName, outPath):
+        """Creates an instance of ExtractClips which can be used mainly
+        with its parse function. It expects inFileName and outPath to
+        exist."""
+        self.clips = []
+        self.errorCount = 0
+        self.inFileName = inFileName
+        self.outPath = outPath
 
-		# Parse clip data from kdenlive project file
-		#producers = soup.find_all'kdenlive_producer')
-		for producer in soup.find_all('kdenlive_producer'):
-			logger.debug("producer:\t%s" % producer)
-		
-			producerID=producer['id']	
-			name=producer['name']
-			resource=producer['resource']
-		
-			logger.debug("producerID: %s;\tname: %s;\tresource: %s" % (producerID, name, resource))
+    def parse(self):
+        """parses the file denoted by the class property inFilePath and
+        writes result into the directory denoted by outPath. The
+        results can be retrieved from the clips property. The number of
+        errors encountered are stored into the errorCount property.
+        Instances are not reusable."""
+        # Soupify XML
+        soup = BeautifulSoup(open(self.inFileName))
 
-			# kdenlive identifies producers as <clipid>_<track> or just <clipid> when on first track
-			regex = "^%s_|^%s$" % (producerID,producerID)
-			for clip in soup.find_all('entry',producer=re.compile(regex)):
-				logger.debug("clip: %s" % clip)
-			
-				startFrame=int(clip['in'])
-				endFrame=int(clip['out'])
-				startSeconds=startFrame/frameRate
-				endSeconds=endFrame/frameRate
-				durationFrames=endFrame-startFrame
-				durationSeconds=endSeconds-startSeconds
-			
-				# break file into name and extension
-				m = re.search(r"(.+)\.(.+)$",name)
-				if( m ):
-					fileName = m.group(1)
-					fileExtension = ".{}".format(m.group(2))
-				else:
-					logger.error("could not parse file extension of '%s'" % name)
-					fileName = outFileName
-					fileExtension = ""
-				
-				outFileName="%s-%d-%d%s" % (fileName, int(startSeconds), int(endSeconds), fileExtension)
-				outFileNamePath=os.path.join(self.outPath,outFileName)
-				ffmpegCommandLine=['ffmpeg','-y','-i',resource,'-ss','%0.3f' % startSeconds,'-t','%0.3f' % durationSeconds,'-c','copy',outFileNamePath] 
+        # Parse framerate
+        frameRateDen = float(soup.profile['frame_rate_den'])
+        frameRateNum = float(soup.profile['frame_rate_num'])
+        frameRate = float(frameRateNum / frameRateDen)
+        logger.debug("frameRate:\t%d" % frameRate)
+        # TODO: check that frameRate was parsed properly
 
-				self.clips.append({'id':producerID, 'name':name, 'resource':resource, 'startFrame':startFrame, 'endFrame':endFrame, 'durationFrames':durationFrames, 'startSeconds':startSeconds, 'endSeconds':endSeconds, 'durationSeconds':durationSeconds, 'ffmpegCommandLine':ffmpegCommandLine })
+        # Parse clip data from kdenlive project file
+        for producer in soup.find_all('kdenlive_producer'):
+            logger.debug("producer:\t%s" % producer)
 
+            producerID = producer['id']
+            name = producer['name']
+            resource = producer['resource']
 
-		# Execute ffmpeg commmands
-		for clip in self.clips:
-			ffmpegCommandLine = clip['ffmpegCommandLine']
-			logger.debug("ffmpegCommandLine: %s" % str(ffmpegCommandLine))
-			proc=subprocess.Popen(ffmpegCommandLine)
-			proc.wait()
-			if( proc.returncode != 0 ):
-				self.errorCount += 1;
+            logger.debug("producerID: %s;\tname: %s;\tresource: %s" % (producerID, name, resource))
 
-	def getClips(self):
-		return self.clips
-	
-	def getErrorCount(self):
-		return self.errorCount
+            # kdenlive identifies producers as <clipid>_<track> or
+            # just <clipid> when on first track
+            regex = "^%s_|^%s$" % (producerID, producerID)
+            for clip in soup.find_all('entry', producer=re.compile(regex)):
+                logger.debug("clip: %s" % clip)
+
+                startFrame = int(clip['in'])
+                endFrame = int(clip['out'])
+                startSeconds = startFrame / frameRate
+                endSeconds = endFrame / frameRate
+                durationFrames = endFrame - startFrame
+                durationSeconds = endSeconds - startSeconds
+
+                # break file into name and extension
+                m = re.search(r"(.+)\.(.+)$", name)
+                if m:
+                    fileName = m.group(1)
+                    fileExtension = ".{}".format(m.group(2))
+                else:
+                    logger.error("could not parse file extension of '%s'" % name)
+                    fileName = name
+                    fileExtension = ""
+
+                outFileName = "%s-%d-%d%s" % (fileName, int(startSeconds), int(endSeconds), fileExtension)
+                outFileNamePath = os.path.join(self.outPath, outFileName)
+                ffmpegCommandLine = ['ffmpeg', '-y', '-i', resource, '-ss', '%0.3f' % startSeconds, '-t', '%0.3f' % durationSeconds, '-c', 'copy', outFileNamePath]
+
+                self.clips.append({
+                    'id': producerID,
+                    'name': name,
+                    'resource': resource,
+                    'startFrame': startFrame,
+                    'endFrame': endFrame,
+                    'durationFrames': durationFrames,
+                    'startSeconds': startSeconds,
+                    'endSeconds': endSeconds,
+                    'durationSeconds': durationSeconds,
+                    'ffmpegCommandLine': ffmpegCommandLine
+                })
+
+        # Execute ffmpeg commmands
+        for clip in self.clips:
+            ffmpegCommandLine = clip['ffmpegCommandLine']
+            logger.debug("ffmpegCommandLine: %s" % str(ffmpegCommandLine))
+            proc = subprocess.Popen(ffmpegCommandLine)
+            proc.wait()
+            if proc.returncode != 0:
+                self.errorCount += 1
+
+    def getClips(self):
+        return self.clips
+
+    def getErrorCount(self):
+        return self.errorCount
 
 
 if __name__ == "__main__":
-	main()
+    main()
