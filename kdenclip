@@ -74,7 +74,7 @@ class ExtractClips():
         errors encountered are stored into the errorCount property.
         Instances are not reusable."""
         # Soupify XML
-        soup = BeautifulSoup(open(self.inFileName))
+        soup = BeautifulSoup(open(self.inFileName),'lxml')
 
         # Parse framerate
         frameRateDen = float(soup.profile['frame_rate_den'])
