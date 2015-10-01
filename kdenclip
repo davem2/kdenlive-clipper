@@ -84,12 +84,21 @@ class ExtractClips():
         # TODO: check that frameRate was parsed properly
 
         # Parse clip data from kdenlive project file
-        for producer in soup.find_all('kdenlive_producer'):
+        for producer in soup.find_all('producer'):
             logger.debug("producer:\t%s" % producer)
+            if producer['id'] == 'black':
+                continue
 
             producerID = producer['id']
-            name = producer['name']
-            resource = producer['resource']
+            resource = producer.find('property',attrs={'name': 'resource'}).string
+
+            # in 15.08 project file change, resource is SOMETIMES absolute.
+            # Not sure the rules for this, but for now assume its relative to $HOME if pathname does not start with / (what about windows?)
+            if not os.path.isabs(resource):
+                resource = os.path.join(os.path.expanduser('~'),resource)
+
+            #name = producer.find('property',attrs={'name': 'kdenlive:clipname'}).string # Not reliable anymore.. some producers don't have this property for unknown reasons.
+            name = os.path.split(resource)[1]
 
             logger.debug("producerID: %s;\tname: %s;\tresource: %s" % (producerID, name, resource))
 
@@ -98,6 +107,9 @@ class ExtractClips():
             regex = "^%s_|^%s$" % (producerID, producerID)
             for clip in soup.find_all('entry', producer=re.compile(regex)):
                 logger.debug("clip: %s" % clip)
+                if (clip['producer'] == 'black' or
+                        clip.parent.attrs['id'] == 'main bin'):
+                    continue
 
                 startFrame = int(clip['in'])
                 endFrame = int(clip['out'])
