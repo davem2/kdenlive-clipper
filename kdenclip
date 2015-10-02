@@ -84,9 +84,20 @@ class KdenliveProject():
         # Parse framerate
         frameRateDen = float(soup.profile['frame_rate_den'])
         frameRateNum = float(soup.profile['frame_rate_num'])
-        frameRate = float(frameRateNum / frameRateDen)
-        logger.debug("frameRate:\t%d" % frameRate)
+        self.frameRate = float(frameRateNum / frameRateDen)
+        logger.debug("frameRate:\t%d" % self.frameRate)
         # TODO: check that frameRate was parsed properly
+
+        # Parse project data
+        self.title = soup.mlt['title']
+        self.version = soup.mlt['version']
+        self.root = soup.mlt['root']
+
+        logger.info("\nTitle   : %s" % self.title)
+        logger.info("Version : %s" % self.version)
+        logger.info("Root    : %s" % self.root)
+
+        #TODO: Handle multiple versions
 
         # Parse clip data from kdenlive project file
         for producer in soup.find_all('producer'):
@@ -98,9 +109,8 @@ class KdenliveProject():
             resource = producer.find('property',attrs={'name': 'resource'}).string
 
             # in 15.08 project file change, resource is SOMETIMES absolute.
-            # Not sure the rules for this, but for now assume its relative to $HOME if pathname does not start with / (what about windows?)
             if not os.path.isabs(resource):
-                resource = os.path.join(os.path.expanduser('~'),resource)
+                resource = os.path.join(os.path.expanduser(self.root),resource)
 
             #name = producer.find('property',attrs={'name': 'kdenlive:clipname'}).string # Not reliable anymore.. some producers don't have this property for unknown reasons.
             name = os.path.split(resource)[1]
@@ -118,8 +128,8 @@ class KdenliveProject():
 
                 startFrame = int(clip['in'])
                 endFrame = int(clip['out'])
-                startSeconds = startFrame / frameRate
-                endSeconds = endFrame / frameRate
+                startSeconds = startFrame / self.frameRate
+                endSeconds = endFrame / self.frameRate
                 durationFrames = endFrame - startFrame
                 durationSeconds = endSeconds - startSeconds
 
@@ -135,8 +145,8 @@ class KdenliveProject():
                     'durationSeconds': durationSeconds
                 })
 
+        logger.info("\nFinished parsing %d clips from %s" % (len(self.clips), projectFile))
         logger.info("\n---")
-        logger.info("Finished parsing %d clips from %s" % (len(self.clips), projectFile))
 
 
     def exportClips(self, outPath):
