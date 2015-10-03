@@ -102,7 +102,7 @@ class KdenliveProject():
         # Parse clip data from kdenlive project file
         for producer in soup.find_all('producer'):
             logger.debug("producer:\t%s" % producer['id'])
-            if producer['id'] == 'black':
+            if not re.match('[0-9]+_playlist[0-9]+$', producer['id']):
                 continue
 
             producerID = producer['id']
@@ -122,8 +122,7 @@ class KdenliveProject():
             regex = "^%s_|^%s$" % (producerID, producerID)
             for clip in soup.find_all('entry', producer=re.compile(regex)):
                 #logger.debug("clip: %s" % clip)
-                if (clip['producer'] == 'black' or
-                        clip.parent.attrs['id'] == 'main bin'):
+                if not re.match('playlist[0-9]+$', clip.parent.attrs['id']):
                     continue
 
                 startFrame = int(clip['in'])
