@@ -32,6 +32,7 @@ from bs4 import BeautifulSoup
 import re
 import subprocess
 import os
+import sys
 import logging
 
 def main():
@@ -73,7 +74,6 @@ class KdenliveProject():
 
     def parseProject(self, projectFile):
         self.clips = []
-        self.errorCount = 0
         self.projectFile = projectFile
 
         logger.info("\nParsing kdenlive project %s ..." % projectFile)
@@ -150,6 +150,7 @@ class KdenliveProject():
 
 
     def exportClips(self, outPath):
+        errorCount = 0
 
         for clip in self.clips:
             # break file into name and extension
@@ -170,11 +171,11 @@ class KdenliveProject():
             proc = subprocess.Popen(ffmpegCommandLine)
             proc.wait()
             if proc.returncode != 0:
-                self.errorCount += 1
+                errorCount += 1
 
         logger.info("\n---")
         logger.info("Finished exporting %d clips from %s" % (len(self.clips), self.projectFile))
-        logger.info("  %d errors occured" % self.errorCount)
+        logger.info("  %d errors occured" % errorCount)
 
 
 # Custom formatter
@@ -206,7 +207,7 @@ class LogFormatter(logging.Formatter):
 
 
 logger = logging.getLogger('kdenclip')
-ch = logging.StreamHandler(os.sys.stdout)
+ch = logging.StreamHandler(sys.stdout)
 fmt = LogFormatter()
 ch.setFormatter(fmt)
 logger.addHandler(ch)
