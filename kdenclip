@@ -14,11 +14,12 @@ Examples:
   kdenclip project.kdenlive -o /savepath/for/clips
 
 Options:
-  -o <outpath>   Specify output path for clips
-  -q, --quiet    Print less text
-  -v, --verbose  Print more text
-  -h, --help     Show help
-  --version      Show version
+  -o <outpath>      Specify output path for clips
+  -s, --seekstart   Move clip start position to the closest seek point before it
+  -q, --quiet       Print less text
+  -v, --verbose     Print more text
+  -h, --help        Show help
+  --version         Show version
 """
 
 __appname__ = "kdenclip"
@@ -55,7 +56,7 @@ def main():
     logger.debug(args)
 
     kdenProject = KdenliveProject(projectFile)
-    kdenProject.exportClips(outPath)
+    kdenProject.exportClips(outPath, args['--seekstart'])
 
     return
 
@@ -146,7 +147,7 @@ class KdenliveProject():
         logger.info("\n---")
 
 
-    def exportClips(self, outPath):
+    def exportClips(self, outPath, seekStart=False):
         errorCount = 0
 
         logger.info("\nExporting project clips to %s ..." % outPath)
@@ -171,7 +172,10 @@ class KdenliveProject():
 
             outFileName = "%s-%d-%d%s" % (fileName, int(clip['startSeconds']), int(clip['endSeconds']), fileExtension)
             outFileNamePath = os.path.join(outPath, outFileName)
-            ffmpegCommandLine = ['ffmpeg', '-y', '-i', clip['resource'], '-ss', '%0.3f' % clip['startSeconds'], '-t', '%0.3f' % clip['durationSeconds'], '-c', 'copy', outFileNamePath]
+            if seekStart:
+                ffmpegCommandLine = ['ffmpeg', '-y', '-ss', '%0.3f' % clip['startSeconds'], '-i', clip['resource'], '-t', '%0.3f' % clip['durationSeconds'], '-c', 'copy', outFileNamePath]
+            else:
+                ffmpegCommandLine = ['ffmpeg', '-y', '-i', clip['resource'], '-ss', '%0.3f' % clip['startSeconds'], '-t', '%0.3f' % clip['durationSeconds'], '-c', 'copy', outFileNamePath]
             logger.debug("ffmpegCommandLine: %s" % str(ffmpegCommandLine))
 
             proc = subprocess.Popen(ffmpegCommandLine)
