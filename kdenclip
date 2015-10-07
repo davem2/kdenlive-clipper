@@ -36,7 +36,7 @@ import sys
 import logging
 
 def main():
-    args = docopt(__doc__, version="kdenclip v{}".format(__version__))
+    args = docopt(__doc__, version="kdenclip v%s" % __version__)
 
     # Process required command line arguments
     projectFile = os.path.abspath(os.path.expanduser(args['<projectfile>']))
@@ -54,13 +54,6 @@ def main():
     logger.setLevel(logLevel)
     logger.debug(args)
 
-    if not os.path.exists(projectFile):
-        logger.error("projectfile argument '%s' isn't a file" % projectFile)
-        return
-    if not os.path.isdir(outPath):
-        logger.error("outpath argument '%s' isn't a directory" % outPath)
-        return
-
     kdenProject = KdenliveProject(projectFile)
     kdenProject.exportClips(outPath)
 
@@ -76,7 +69,11 @@ class KdenliveProject():
         self.clips = []
         self.projectFile = projectFile
 
-        logger.info("\nParsing kdenlive project %s ..." % projectFile)
+        logger.info("\nParsing kdenlive project ...")
+
+        if not os.path.exists(projectFile):
+            logger.error("Projectfile argument '%s' isn't a file" % projectFile)
+            return
 
         # Soupify XML
         soup = BeautifulSoup(open(self.projectFile),'lxml')
@@ -85,7 +82,7 @@ class KdenliveProject():
         frameRateDen = float(soup.profile['frame_rate_den'])
         frameRateNum = float(soup.profile['frame_rate_num'])
         self.frameRate = float(frameRateNum / frameRateDen)
-        logger.debug("frameRate:\t%d" % self.frameRate)
+        logger.debug("frameRate: %d" % self.frameRate)
         # TODO: check that frameRate was parsed properly
 
         # Parse project data
@@ -93,7 +90,8 @@ class KdenliveProject():
         self.version = soup.mlt['version']
         self.root = soup.mlt['root']
 
-        logger.info("\nTitle   : %s" % self.title)
+        logger.info("\nProject : %s" % self.projectFile)
+        logger.info("Title   : %s" % self.title)
         logger.info("Version : %s" % self.version)
         logger.info("Root    : %s" % self.root)
 
@@ -101,7 +99,7 @@ class KdenliveProject():
 
         # Parse clip data from kdenlive project file
         for producer in soup.find_all('producer'):
-            logger.debug("producer:\t%s" % producer['id'])
+            logger.debug("Producer: %s" % producer['id'])
             if not re.match('[0-9]+_playlist[0-9]+$', producer['id']):
                 continue
 
@@ -112,16 +110,16 @@ class KdenliveProject():
             if not os.path.isabs(resource):
                 resource = os.path.join(os.path.expanduser(self.root),resource)
 
-            #name = producer.find('property',attrs={'name': 'kdenlive:clipname'}).string # Not reliable anymore.. some producers don't have this property for unknown reasons.
             name = os.path.split(resource)[1]
 
-            logger.debug("producerID: %s;\tname: %s;\tresource: %s" % (producerID, name, resource))
+            logger.debug("producerID: %s, name: %s, resource: %s" % (producerID, name, resource))
 
             # kdenlive identifies producers as <clipid>_<track> or
             # just <clipid> when on first track
             regex = "^%s_|^%s$" % (producerID, producerID)
             for clip in soup.find_all('entry', producer=re.compile(regex)):
                 #logger.debug("clip: %s" % clip)
+                logger.debug("Clip found: producer %s, in %s, out %s" % (clip['producer'],clip['in'],clip['out']))
                 if not re.match('playlist[0-9]+$', clip.parent.attrs['id']):
                     continue
 
@@ -151,14 +149,23 @@ class KdenliveProject():
     def exportClips(self, outPath):
         errorCount = 0
 
+        logger.info("\nExporting project clips to %s ..." % outPath)
+
+        if not os.path.isdir(outPath):
+            logger.error("Outpath argument '%s' isn't a directory" % outPath)
+            return
+
         for clip in self.clips:
+            logger.info("\n---")
+            logger.info("Processing clip %s, start(%0.2fs) duration(%0.2fs)" % (clip['name'],clip['startSeconds'],clip['durationSeconds']))
+            logger.info("---")
             # break file into name and extension
             m = re.search(r"(.+)\.(.+)$", clip['name'])
             if m:
                 fileName = m.group(1)
-                fileExtension = ".{}".format(m.group(2))
+                fileExtension = ".%s" % m.group(2)
             else:
-                logger.error("could not parse file extension of '%s'" % clip['name'])
+                logger.error("Could not parse file extension of '%s'" % clip['name'])
                 fileName = clip['name']
                 fileExtension = ""
 
@@ -170,6 +177,7 @@ class KdenliveProject():
             proc = subprocess.Popen(ffmpegCommandLine)
             proc.wait()
             if proc.returncode != 0:
+                logger.debug("Error processing clip %s" % clip['name'])
                 errorCount += 1
 
         logger.info("\n---")
@@ -188,7 +196,7 @@ class LogFormatter(logging.Formatter):
 
         # Replace the original format with one customized by logging level
         if record.levelno == logging.DEBUG:
-            self._fmt = "DEBUG: %(module)s: %(lineno)d: %(message)s"
+            self._fmt = "%(module)s[%(lineno)d]: %(message)s"
         elif record.levelno == logging.INFO:
             self._fmt = "%(message)s"
         elif record.levelno == logging.ERROR:
