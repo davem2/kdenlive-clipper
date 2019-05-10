@@ -101,8 +101,6 @@ class KdenliveProject():
         # Parse clip data from kdenlive project file
         for producer in soup.find_all('producer'):
             logger.debug("Producer: %s" % producer['id'])
-            if not re.match('[0-9]+_playlist[0-9]+$', producer['id']):
-                continue
 
             producerID = producer['id']
             resource = producer.find('property',attrs={'name': 'resource'}).string
@@ -124,8 +122,8 @@ class KdenliveProject():
                 if not re.match('playlist[0-9]+$', clip.parent.attrs['id']):
                     continue
 
-                startFrame = int(clip['in'])
-                endFrame = int(clip['out'])
+                startFrame = int(producer.find('property',attrs={'name': 'kdenlive:zone_in'}).string)
+                endFrame = int(producer.find('property',attrs={'name': 'kdenlive:zone_out'}).string)
                 startSeconds = startFrame / self.frameRate
                 endSeconds = endFrame / self.frameRate
                 durationFrames = endFrame - startFrame
@@ -185,7 +183,7 @@ class KdenliveProject():
                 errorCount += 1
 
         logger.info("\n---")
-        logger.info("Finished exporting %d clips from %s" % (len(self.clips), self.projectFile))
+        logger.info("Processed %d clips from %s" % (len(self.clips), self.projectFile))
         logger.info("  %d errors occured" % errorCount)
 
 
