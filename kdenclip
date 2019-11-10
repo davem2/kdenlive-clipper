@@ -35,6 +35,9 @@ import subprocess
 import os
 import sys
 import logging
+import datetime
+import time
+
 
 def main():
     args = docopt(__doc__, version="kdenclip v%s" % __version__)
@@ -119,23 +122,20 @@ class KdenliveProject():
             for clip in soup.find_all('entry', producer=re.compile(regex)):
                 #logger.debug("clip: %s" % clip)
                 logger.debug("Clip found: producer %s, in %s, out %s" % (clip['producer'],clip['in'],clip['out']))
+
                 if not re.match('playlist[0-9]+$', clip.parent.attrs['id']):
                     continue
 
-                startFrame = int(producer.find('property',attrs={'name': 'kdenlive:zone_in'}).string)
-                endFrame = int(producer.find('property',attrs={'name': 'kdenlive:zone_out'}).string)
-                startSeconds = startFrame / self.frameRate
-                endSeconds = endFrame / self.frameRate
-                durationFrames = endFrame - startFrame
+                x = time.strptime(clip['in'].split('.')[0],'%H:%M:%S')
+                startSeconds = datetime.timedelta(hours=x.tm_hour,minutes=x.tm_min,seconds=x.tm_sec).total_seconds() + float('0.' + clip['in'].split('.')[1])
+                x = time.strptime(clip['out'].split('.')[0],'%H:%M:%S')
+                endSeconds = datetime.timedelta(hours=x.tm_hour,minutes=x.tm_min,seconds=x.tm_sec).total_seconds() + float('0.' + clip['out'].split('.')[1])
                 durationSeconds = endSeconds - startSeconds
 
                 self.clips.append({
                     'id': producerID,
                     'name': name,
                     'resource': resource,
-                    'startFrame': startFrame,
-                    'endFrame': endFrame,
-                    'durationFrames': durationFrames,
                     'startSeconds': startSeconds,
                     'endSeconds': endSeconds,
                     'durationSeconds': durationSeconds
