@@ -124,6 +124,10 @@ class KdenliveProject():
                 logger.debug("Clip found: producer %s, in %s, out %s" % (clip['producer'],clip['in'],clip['out']))
 
                 if not re.match('playlist[0-9]+$', clip.parent.attrs['id']):
+                    logger.debug("Clip rejected: not in a playlist")
+                    continue
+                if clip.parent.property.attrs['name'] == 'kdenlive:audio_track':
+                    logger.debug("Clip rejected: audio track")
                     continue
 
                 x = time.strptime(clip['in'].split('.')[0],'%H:%M:%S')
