@@ -90,12 +90,12 @@ class KdenliveProject():
         # TODO: check that frameRate was parsed properly
 
         # Parse project data
-        self.title = soup.mlt['title']
+        #self.title = soup.mlt['title']
         self.version = soup.mlt['version']
         self.root = soup.mlt['root']
 
         logger.info("\nProject : %s" % self.projectFile)
-        logger.info("Title   : %s" % self.title)
+        #logger.info("Title   : %s" % self.title)
         logger.info("Version : %s" % self.version)
         logger.info("Root    : %s" % self.root)
 
